@@ -10,7 +10,7 @@ static struct timer_list my_timer;
 
 void my_timer_callback(unsigned long data)
 {
-	printk("Hello, World! Jiffies: %ld\n", jiffies);
+	printk("Hello, World!\n");
 	my_timer.expires += msecs_to_jiffies(timer * 1000);
 	add_timer(&my_timer);
 }
@@ -22,13 +22,10 @@ static ssize_t timer_show(struct kobject *kobj, struct kobj_attribute *attr, cha
 
 static ssize_t timer_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
 {
-	int retval;
-
-	printk(KERN_ALERT "Store called\n");
 	sscanf(buf, "%du", &timer);
 
 	if (timer_pending(&my_timer)) {
-		retval = del_timer_sync(&my_timer);
+		int retval = del_timer(&my_timer);
 		if (retval)
 			printk("The timer is still in use...\n");
 	}
@@ -39,12 +36,10 @@ static ssize_t timer_store(struct kobject *kobj, struct kobj_attribute *attr, co
 		add_timer(&my_timer);
 	}
 
-	printk("count: %d\n", (int)count);
 	return count;
 }
 
-static struct kobj_attribute timer_attribute =
-	__ATTR(timer, 0665, timer_show, timer_store);
+static struct kobj_attribute timer_attribute = __ATTR(timer, 0665, timer_show, timer_store);
 
 static struct attribute *attrs[] = {
 	&timer_attribute.attr,
@@ -61,6 +56,8 @@ static int __init timer_init(void)
 {
 	int retval;
 
+	printk(KERN_INFO "Module initializing...\n");
+
 	timer_kobj = kobject_create_and_add("dev_timer", kernel_kobj);
 	if (!timer_kobj)
 		return -ENOMEM;
@@ -76,8 +73,10 @@ static int __init timer_init(void)
 
 static void __exit timer_exit(void)
 {
+	printk(KERN_INFO "Module releasing...\n");
+
 	if (timer_pending(&my_timer)) {
-		int retval = del_timer_sync(&my_timer);
+		int retval = del_timer(&my_timer);
 		if (retval)
 			printk("The timer is still in use...\n");
 	}
@@ -88,4 +87,4 @@ static void __exit timer_exit(void)
 module_init(timer_init);
 module_exit(timer_exit);
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("/~~GeNeRaL~~/ \\o.");
+MODULE_AUTHOR("bsu");
